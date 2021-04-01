@@ -5,7 +5,7 @@ TMPZDJECIE
 TMPPOKAZOWE
 ZDJECIE
 dostepneEfekty=(
-        "Rysunek weglem"
+        "Rysunek rysowany weglem"
         "Czarna dziura"
         "Farba oleinowa"
         "Zdjecie z Palaroida"
