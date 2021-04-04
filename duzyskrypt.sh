@@ -9,7 +9,18 @@ dostepneEfekty=(
         "Czarna dziura"
         "Farba oleinowa"
         "Zdjecie z Palaroida"
-    )
+)
+dostepnePolozenia=(
+    "NorthWest"
+    "North"
+    "NorthEast"
+    "West"
+    "Center"
+    "East"
+    "SouthWest"
+    "South"
+    "SouthEast"
+)
 powitanie() {
     zenity --info --text "Witaj w edytorze zdjec\nWybierz zdjecie ktore chcesz edytowac" --title "Edytor zdjec" --width 300
 }
@@ -31,8 +42,19 @@ aktualizuj_menu() {
     "5. Zmien rozmiar zdjecia"
     "6. Dodaj specjalny efekt"
     "7. Dodaj obramowanie"
-    "8. Zapisz zmiany"
-    "9. Koniec")
+    "8. Dodaj znak wodny"
+    "9. Zapisz zmiany"
+    "10. Koniec")
+}
+aktualizuj_czcionke() {
+    opcjeCzcionki=(
+    "Tekst: $TEKST"
+    "Czcionka: $CZCIONKA"
+    "Rozmiar czcionki: $CZCIO_WIELK"
+    "Kolor czcionki: $CZCIO_KOLOR"
+    "Polozenie tekstu: $POLOZENIE"
+    "Anuluj"
+    "Zatwierdz")
 }
 kopiuj() {
     ROZSZ=$(echo "${ZDJECIE##*.}")
@@ -149,13 +171,82 @@ efekty_zdjecia() {
         efekty_zdjecia
     fi
 }
+wczytaj_tekst() {
+    TEKST=$(zenity --entry --title="Ustawienie znaku wodnego" --text="Tekst znaku wodnego")
+}
+rozmiar_czcionki() {
+    TMP_CZCIO_WIELK=$(zenity --scale --text "Rozmiar czcionki" --min-value 1 --max-value 200 --value 20)
+    if [ "$?" == 0 ] && [ "$TMP_CZCIO_WIELK" != "" ]; then 
+        CZCIO_WIELK=$TMP_CZCIO_WIELK 
+    fi     
+}
+kolor_czcionki() {
+    TMP_CZCIO_KOLOR=$(zenity --color-selection --title="Kolor czcionki" --show-palette)
+    if [ "$?" == 0 ] && [ "$TMP_CZCIO_KOLOR" != "" ]; then 
+        CZCIO_KOLOR=$TMP_CZCIO_KOLOR 
+    fi     
+}
+
+zmien_czcionke() {
+    TMP=$(convert -list font | grep Font | cut -d ":" -f2 | sed 's/ //g')
+    readarray -t DOSTEPNE_CZCIONKI <<<"$TMP"
+    TMP_WYBOR=$(zenity --list --column=Czcionki "${DOSTEPNE_CZCIONKI[@]}" --text="Wybierz czcionke do tekstu" --title="Zmiana czcionki" --height 370 --width 500)
+    
+    if [ "$TMP_WYBOR" != "" ]; then
+        CZCIONKA=$TMP_WYBOR
+    fi
+}
+polozenie_znaku_wodnego() {
+    
+    ODP=$(zenity --list --column=Menu "${dostepnePolozenia[@]}" --text="Wybiez polozenie znaku wodnego" --title="Zmiana polozenia" --height 330 --width 500)
+    if [ "$?" == 0 ] && [ "$ODP" != "" ]; then 
+        POLOZENIE=$ODP 
+    fi 
+
+}
+znak_wodny_zdjecia() {
+    TEKST=$(zenity --entry --title="Tekst znaku wodnego" --text="Wprowadz znak wodny")
+    if [ "$?" != 0 ]; then
+        return 12
+    fi
+    CZCIONKA="FreeSans"
+    CZCIO_WIELK=$(gsettings get org.gnome.desktop.interface monospace-font-name |  sed "s/'//g" | cut -d " " -f2)
+    CZCIO_KOLOR='black'
+    ZW_WYBOR="aha"
+    POLOZENIE="Center"
+    while [[ $ZW_WYBOR != "${opcjeCzcionki[6]}" ]]; do
+        aktualizuj_czcionke
+        ZW_WYBOR=$(zenity --list --column=Menu "${opcjeCzcionki[@]}" --height 370 --width 500)
+        if [ "$?" != 0 ]; then
+            return 0
+        fi 
+        case $ZW_WYBOR in
+            "${opcjeCzcionki[0]}") wczytaj_tekst;;
+            "${opcjeCzcionki[1]}") zmien_czcionke;;
+            "${opcjeCzcionki[2]}") rozmiar_czcionki;;
+            "${opcjeCzcionki[3]}") kolor_czcionki;;
+            "${opcjeCzcionki[4]}") polozenie_znaku_wodnego;;
+            "${opcjeCzcionki[5]}") return 0;;
+            "${opcjeCzcionki[6]}")
+            convert $TMPZDJECIE -font $CZCIONKA -pointsize $CZCIO_WIELK -draw "gravity $POLOZENIE fill $CZCIO_KOLOR text 100,50 \"$TEKST\"" $TMPPOKAZOWE
+                wyswietl_potwierdzenie
+                if [ "$?" == 9 ]; then
+                    ZW_WYBOR="kontynuuj"
+                fi
+            ;;
+            *) wyswietl_blad "Wpisz poprawna wartosc!";;
+        esac;
+    done
+}
+
 
 
 # LOGIKA PROGRAMU
 clear
 powitanie
 wczytaj_zdjecie
-while [[ $WYBOR != "9. Koniec" ]]; do
+WYBOR="start"
+while [[ $WYBOR != "${opcjeMenu[10]}" ]]; do
     aktualizuj_menu
     WYBOR=$(zenity --list --column=Menu "${opcjeMenu[@]}" --height 370 --width 500)
     
@@ -172,8 +263,9 @@ while [[ $WYBOR != "9. Koniec" ]]; do
         "${opcjeMenu[5]}") rozmiar_zdjecia;;
         "${opcjeMenu[6]}") efekty_zdjecia;;
         "${opcjeMenu[7]}") obramowanie_zdjecia;;
-        "${opcjeMenu[8]}") zapisz_zmiany;;
-        "${opcjeMenu[9]}");;
+        "${opcjeMenu[8]}") znak_wodny_zdjecia;;
+        "${opcjeMenu[9]}") zapisz_zmiany;;
+        "${opcjeMenu[10]}");;
         *) wyswietl_blad "Wpisz poprawna wartosc!";;
     esac;
     
