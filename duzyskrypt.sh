@@ -1,9 +1,17 @@
 #!/bin/bash
+# Author           : Bartosz Zylwis ( s184477@student.pg.edu.pl )
+# Created On       : 2021-04-06
+# Last Modified By : Bartosz Zylwis ( s184477@student.pg.edu.pl )
+# Last Modified On : 2021-04-18 
+# Version          : 0.9
+#
+# Description      : Edytor zdjec pozwalajacy na dokonanie szybkich zmian na plikach graficznych
+# Opis              
+#
+# Licensed under GPL (see /usr/share/common-licenses/GPL for more details
+# or contact # the Free Software Foundation for a copy)
 
 opcjeMenu=""
-TMPZDJECIE
-TMPPOKAZOWE
-ZDJECIE
 dostepneEfekty=(
         "Rysunek rysowany weglem"
         "Czarna dziura"
@@ -21,6 +29,16 @@ dostepnePolozenia=(
     "South"
     "SouthEast"
 )
+help() {
+    echo "Pomoc do programu!"
+    echo "Program QuickPhotoEditor służy do szybkiej edycji zdjęć. Po uruchomieniu skryptu należy wybrać zdjęcie, które ma być edytowane. Po poprawnym wybraniu wyświetla się menu główne z dostępnymi funkcjami programu. Dostępne opcje: podgląd, zmiana edytowanego pliku, blurowanie, obrót, zmiana rozmiaru(wymiarów), dodanie obramowania, dodanie znaku wodnego, dodanie efektów specjalnych, zapisanie zmian i wyjście z programu. "
+    exit 0
+}
+version() {
+    echo "Author: Bartosz Zylwis ( s184477@student.pg.edu.pl )"
+    echo "Version: 0.8"
+    exit 0
+}
 powitanie() {
     zenity --info --text "Witaj w edytorze zdjec\nWybierz zdjecie ktore chcesz edytowac" --title "Edytor zdjec" --width 300
 }
@@ -57,7 +75,7 @@ aktualizuj_czcionke() {
     "Zatwierdz")
 }
 kopiuj() {
-    ROZSZ=$(echo "${ZDJECIE##*.}")
+    ROZSZ=$(echo "${ZDJECIE##*.}")                  #zczytanie rozszerzenia pliku
     TMPZDJECIE="/tmp/zdjecieedyt$$.$ROZSZ"          #zdjecie uzywane do edycji
     TMPPOKAZOWE="/tmp/zdjeciepokaz$$.$ROZSZ"        #zdjecie uzywane do pokazywania zmian
     cp "$ZDJECIE" "$TMPZDJECIE"
@@ -239,34 +257,45 @@ znak_wodny_zdjecia() {
     done
 }
 
+main() {            #glowna petla programu
 
-
-# LOGIKA PROGRAMU
-clear
-powitanie
-wczytaj_zdjecie
-WYBOR="start"
-while [[ $WYBOR != "${opcjeMenu[10]}" ]]; do
-    aktualizuj_menu
-    WYBOR=$(zenity --list --column=Menu "${opcjeMenu[@]}" --height 370 --width 500)
-    
-    if [ "$?" != 0 ]; then
-        exit
-    fi      
     clear
-    case $WYBOR in
-        "${opcjeMenu[0]}") wczytaj_zdjecie;;
-        "${opcjeMenu[1]}") wyswietl_podglad;;
-        "${opcjeMenu[2]}") zmiana_edytowanego;;
-        "${opcjeMenu[3]}") blurowanie_zdjecia;;
-        "${opcjeMenu[4]}") obrot_zdjecia;;
-        "${opcjeMenu[5]}") rozmiar_zdjecia;;
-        "${opcjeMenu[6]}") efekty_zdjecia;;
-        "${opcjeMenu[7]}") obramowanie_zdjecia;;
-        "${opcjeMenu[8]}") znak_wodny_zdjecia;;
-        "${opcjeMenu[9]}") zapisz_zmiany;;
-        "${opcjeMenu[10]}");;
-        *) wyswietl_blad "Wpisz poprawna wartosc!";;
-    esac;
-    
+    powitanie
+    wczytaj_zdjecie
+    WYBOR="start"
+    while [[ $WYBOR != "${opcjeMenu[10]}" ]]; do
+        aktualizuj_menu
+        WYBOR=$(zenity --list --column=Menu "${opcjeMenu[@]}" --title="SUPER Photo Editor Lite" --text="Wybierz opcje z ponizszego menu" --height 370 --width 500)
+        
+        if [ "$?" != 0 ]; then
+            exit
+        fi      
+        clear
+        case $WYBOR in
+            "${opcjeMenu[0]}") wczytaj_zdjecie;;
+            "${opcjeMenu[1]}") wyswietl_podglad;;
+            "${opcjeMenu[2]}") zmiana_edytowanego;;
+            "${opcjeMenu[3]}") blurowanie_zdjecia;;
+            "${opcjeMenu[4]}") obrot_zdjecia;;
+            "${opcjeMenu[5]}") rozmiar_zdjecia;;
+            "${opcjeMenu[6]}") efekty_zdjecia;;
+            "${opcjeMenu[7]}") obramowanie_zdjecia;;
+            "${opcjeMenu[8]}") znak_wodny_zdjecia;;
+            "${opcjeMenu[9]}") zapisz_zmiany;;
+            "${opcjeMenu[10]}");;
+            *) wyswietl_blad "Wpisz poprawna wartosc!";;
+        esac;
+        
+    done
+}
+
+while getopts hvf:q OPCJE; do
+    case $OPCJE in
+        h) help;;
+        v) version;;
+        *) echo "Nieznana opcja"
+            exit 0;;
+    esac
 done
+
+main
